@@ -63,7 +63,7 @@ const saveConfiguration = async configuration => {
     if (newFile) {
       // Appending configuration to new .env file
       let stream = fs.createWriteStream(file, {flags:'a'});
-      stream.write( 'BASE_URL=https://api.developer.opentext.com\n');
+      stream.write( 'BASE_URL=https://na-1-dev.api.opentext.com\n');
       stream.write( `TENANT_ID=${configuration.tenantId}\n`);
       stream.write( `CLIENT_ID=${configuration.client_id}\n`);
       stream.write( `CLIENT_SECRET=${configuration.client_secret}\n`);
@@ -267,7 +267,7 @@ const getToken = async (req) => {
   const password = req.body.password;
   let postRequest = {
     method: "post",
-    url: process.env.BASE_URL + "/oauth2/token",
+    url: process.env.BASE_URL + "/tenants/" + process.env.TENANT_ID + "/oauth2/token",
     headers: {
       "Content-Type": "application/json"
     },
