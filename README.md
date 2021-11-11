@@ -9,11 +9,9 @@ NodeJs version 14.2.0
 ## Credentials
 
 The credentials can be configured from inside the running application. In the login dialog there is a wrench icon that 
-allows to manually configure the credentials.
-
-Bear in mind that once entered, the details cannot be recovered for security reasons. However, the details are saved
-to a file in backend/.env and can be seen there. the file can also be removed to reset the credentials.
-
+allows to manually configure the credentials. Bear in mind that once entered, the details cannot be recovered for
+security reasons.
+  
 ## Installation steps
 
 ### Download and install npm and Node.js

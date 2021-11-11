@@ -70,6 +70,7 @@ class LoginDialog extends React.Component {
   }
 
   async isAppConfigured() {
+	// Login Dialog - calling /configuration
     await axios.get('/configuration')
         .then(res => {
           if (res.status === 204) {
