@@ -17,3 +17,6 @@ docs/.trash
 
 # Sonarqube local scans
 .scannerwork
+
+# cred
+app-cred/
