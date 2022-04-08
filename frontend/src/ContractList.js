@@ -20,6 +20,8 @@ import MuiAlert from "@material-ui/lab/Alert";
 import CloseIcon from "@material-ui/icons/Close";
 import RiskClassification from './RiskClassification';
 
+import { loadViewer } from "./services/viewer/viewer";
+
 function Alert(props) {
   return <MuiAlert elevation={6} variant="filled" {...props} />;
 }
@@ -52,6 +54,20 @@ export default class ContractList extends React.Component {
 
   componentDidMount() {
     this.getContracts();
+    window.addEventListener("bravaReady", this.onBravaReady);
+    window.addEventListener("close", this.onViewerClose);
+    loadViewer('brava-view-1.x');
+  }
+
+  onBravaReady = (e) => {
+    console.log("Brava ready: ", e.detail);
+    console.log("Brava API Object:");
+    console.log(window[e.detail]);
+    window['bravaapi'] = window[e.detail];
+  }
+
+  onViewerClose() {
+    console.log("viewer closed");
   }
 
   componentDidUpdate(prevProps, prevState) {
@@ -148,7 +164,7 @@ export default class ContractList extends React.Component {
                   <TableCell align="left">{row.properties ? row.properties.contract_value : ''}</TableCell>
                   <TableCell align="left"><RiskClassification row={row} /></TableCell>
                   <TableCell align="left">
-                    <Button size="small" variant="outlined" color="primary" onClick={() => { this.openDocumentDialogView(row._links['urn:eim:linkrel:download-media'].href) }}>Original</Button>
+                    <Button size="small" variant="outlined" color="primary" onClick={() => { this.openDocumentDialogView(row._links['urn:eim:linkrel:contents'].href) }}>Original</Button>
                   </TableCell>
                   <TableCell align="left">
                     <IconButton size="small" variant="outlined" color="primary" title="Show details" onClick={() => { this.showDetails(row) }}>

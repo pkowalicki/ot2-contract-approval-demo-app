@@ -49,9 +49,6 @@ export default class AddContract extends React.Component {
 		let selectedFile = event.target.files[0];
 		this.setState({ selectedFile: selectedFile });
 		this.fileNameText.innerHTML = selectedFile.name;
-		if (! /\.pdf$/.test(selectedFile.name)) {
-			this.fileNameText.innerHTML += "<br/><b>Note: This application only supports pdf files.</b>";
-		}
 	}
 
 	setFileNameInputRef = element => {
@@ -119,6 +116,11 @@ export default class AddContract extends React.Component {
 							"name": res.data.entries[0].fileName,
 							"rendition_type": "primary",
 							"blob_id": res.data.entries[0].id
+						},
+						{
+							"name": "Brava rendition",
+							"rendition_type": "secondary",
+							"mime_type": "application/vnd.blazon+json"
 						}
 					],
 					"properties": {

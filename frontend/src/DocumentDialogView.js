@@ -1,6 +1,5 @@
 import React from 'react'
 import axios from 'axios';
-import PDFViewer from 'pdf-viewer-reactjs';
 import {
 	Backdrop,
 	Button, CircularProgress,
@@ -14,7 +13,7 @@ export default class DocumentDialogView extends React.Component {
 	constructor(props) {
 		super(props);
 		this.state = {
-			document: { url: '', base64: '' },
+			document: { url: '', rendition: '' },
 			downloadHref: '',
 			fileName: ''
 		}
@@ -26,14 +25,14 @@ export default class DocumentDialogView extends React.Component {
 				this.setState({
 					downloadHref: this.props.downloadHref
 				});
-				this.downloadDocument(this.props.downloadHref);
+				this.downloadDocumentContents(this.props.downloadHref);
 			}
 		}
 	}
 
 	closeDialog() {
 		this.setState({
-			document: { url: '', base64: '' },
+			document: { url: '', rendition: '' },
 			downloadHref: '',
 			fileName: ''
 		});
@@ -54,24 +53,73 @@ export default class DocumentDialogView extends React.Component {
 			responseType: 'arraybuffer'
 		}).then(file => {
 			this.setState({
-				document: { base64: new Buffer(file.data).toString('base64') },
+				document: { rendition: new Buffer(file.data).toString('base64') },
 			})
 		}).catch(error => {
 			alert("Error " + error.response.status + " in downloading: " + error.response.statusText);
 		});
 	}
 
+	downloadDocumentContents(url) {
+		let urlObj = new URL(url);
+
+		axios({
+			method: 'get',
+			url: '/api' + urlObj.pathname
+		}).then(contents => {
+			if (contents.data && contents.data._embedded.collection) {
+				contents.data._embedded.collection.forEach(rendition => {
+					if (rendition.mime_type === 'application/vnd.blazon+json') {
+						this.downloadRendition(rendition._links['urn:eim:linkrel:download-media'].href);
+					}
+				});				
+			}
+		}).catch(error => {
+			alert("Error " + error.response.status + " in downloading: " + error.response.statusText);
+		});
+	}
+
+	downloadRendition(url) {
+		let urlObj = new URL(url);
+
+		axios({
+			method: 'get',
+			url: '/api/' + urlObj.pathname
+		})
+		.then(rendition => {
+			if (rendition.data) {
+				this.setState({
+					document: { rendition: rendition.data.id },
+				})
+				this.renderDocument(rendition);
+		}
+		})
+		.catch();
+	}
+
+	renderDocument(rendition){
+		if (rendition.data && window['bravaapi']) {
+			console.log('Rendering with viewer:');
+			console.log(JSON.stringify(rendition));
+			window['bravaapi'].setHttpHeaders({ Authorization: "Bearer token"});
+			window['bravaapi'].addPublication(rendition.data, true);
+			window['bravaapi'].render("bravaViewRoot");
+		} else {
+			console.log("no rendition or viewer available");
+		}
+	}
+
 	render() {
-		if (this.state.document.base64) {
+		if (this.state.document.rendition) {
 			return (
 				<Dialog
-					open={this.props.open}
-					aria-labelledby="form-dialog-title"
 					fullWidth={true}
-					maxWidth='md'>
+					maxWidth='lg'
+					open={this.props.open}
+					aria-labelledby="form-dialog-title">
 					<DialogTitle id="customized-dialog-title">{this.state.fileName}</DialogTitle>
 					<DialogContent>
-						<PDFViewer document={this.state.document} />
+						<div id="bravaViewRoot" style={{height: '700px'}}></div>
 					</DialogContent>
 					<DialogActions>
 						<Button onClick={() => { this.closeDialog() }} variant="contained" color="primary">

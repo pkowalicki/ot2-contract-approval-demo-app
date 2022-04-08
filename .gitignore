@@ -20,3 +20,5 @@ docs/.trash
 
 # cred
 app-cred/
+backend/server.bundle.js
+backend/server.bundle.js.LICENSE.txt

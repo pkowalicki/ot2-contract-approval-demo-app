@@ -6,10 +6,11 @@ const replace = require('replace-in-file');
 const fs = require('fs')
 
 const { tasksGetObjects, tasksUpdate } = require("./services/Tasks");
-const { cmsGetObjects, cmsCreateInstance } = require("./services/CMS");
+const { cmsGetObjects, cmsCreateInstance, cmsGetContents } = require("./services/CMS");
 const { cssDownloadContent, cssUploadContent } = require("./services/CSS");
 const { rgGetToken, rgProcessDoc } = require("./services/RiskGuard");
 const { workflowCreateInstance } = require("./services/Workflow");
+const { viewerLoader, getRendition } = require("./services/Viewer");
 
 const bodyParser = require("body-parser");
 const cookieParser = require('cookie-parser');
@@ -65,28 +66,28 @@ const saveConfiguration = async configuration => {
   try {
     if (newFile) {
       // Appending configuration to new .env file
-      let stream = fs.createWriteStream(file, {flags:'a'});
-      stream.write( 'BASE_URL=https://na-1-dev.api.opentext.com\r\n');
-      stream.write( `TENANT_ID=${configuration.tenantId}\r\n`);
-      stream.write( `CLIENT_ID=${configuration.client_id}\r\n`);
-      stream.write( `CLIENT_SECRET=${configuration.client_secret}\r\n`);
-      stream.write( `RG_TOKEN_AUTH=${rgToken}\r\n`);
+      let stream = fs.createWriteStream(file, { flags: 'a' });
+      stream.write('BASE_URL=https://na-1-dev.api.opentext.com\r\n');
+      stream.write(`TENANT_ID=${configuration.tenantId}\r\n`);
+      stream.write(`CLIENT_ID=${configuration.client_id}\r\n`);
+      stream.write(`CLIENT_SECRET=${configuration.client_secret}\r\n`);
+      stream.write(`RG_TOKEN_AUTH=${rgToken}\r\n`);
       stream.end();
     } else {
       // Replacing configuration in .env file
       const results = await replace({
         files: file,
         from: [
-            /TENANT_ID=.*/g,
-            /CLIENT_ID=.*/g,
-            /CLIENT_SECRET=.*/g,
-            /RG_TOKEN_AUTH=.*/g
+          /TENANT_ID=.*/g,
+          /CLIENT_ID=.*/g,
+          /CLIENT_SECRET=.*/g,
+          /RG_TOKEN_AUTH=.*/g
         ],
         to: [
-            `TENANT_ID=${configuration.tenantId}`,
-            `CLIENT_ID=${configuration.client_id}`,
-            `CLIENT_SECRET=${configuration.client_secret}`,
-            `RG_TOKEN_AUTH=${rgToken}`
+          `TENANT_ID=${configuration.tenantId}`,
+          `CLIENT_ID=${configuration.client_id}`,
+          `CLIENT_SECRET=${configuration.client_secret}`,
+          `RG_TOKEN_AUTH=${rgToken}`
         ]
       });
       if (!results[0].hasChanged) {
@@ -103,7 +104,7 @@ const saveConfiguration = async configuration => {
     process.env.CLIENT_SECRET = configuration.client_secret;
     process.env.TENANT_ID = configuration.tenantId;
     process.env.RG_TOKEN_AUTH = rgToken;
-    process.env.BASE_URL = 'https://api.developer.opentext.com';
+    process.env.BASE_URL = 'https://na-1-dev.api.opentext.com';
   }
 }
 
@@ -149,7 +150,7 @@ app.post("/configuration", async (req, res) => {
   console.log('Saving configuration...');
   let configuration = req.body;
   await saveConfiguration(configuration);
-  res.status(200).send({message: `Configuration saved successfully.`});
+  res.status(200).send({ message: `Configuration saved successfully.` });
 });
 
 /**
@@ -175,7 +176,7 @@ app.put("/configuration", async (req, res) => {
     const configuration = JSON.parse(file.data);
     await saveConfiguration(configuration);
     console.log('Configuration file processed successfully => ' + JSON.stringify(configuration, null, 2));
-    res.status(200).send({message: `Configuration file ${file.name} processed successfully.`});
+    res.status(200).send({ message: `Configuration file ${file.name} processed successfully.` });
   } catch (error) {
     console.error(errorMessage, error);
     res.status(400).send(errorMessage);
@@ -269,8 +270,8 @@ app.post("/api/css/uploadcontent", async (req, res) => {
 /**
  * Processes file with Risk Guard.
  */
- /**/
- app.post("/api/rg/process", async (req, res) => {
+/**/
+app.post("/api/rg/process", async (req, res) => {
   try {
     let rgToken = await rgGetToken();
     console.log(rgToken);
@@ -282,7 +283,47 @@ app.post("/api/css/uploadcontent", async (req, res) => {
   }
 });
 
+/**
+ * Gets the viewer resource including bootloader script.
+ */
 /**/
+app.get("/api/viewer/:viewer/*", async (req, res) => {
+  console.log("Getting viewer resource for viewer:", req.params.viewer);
+  try {
+    let responseBody = await viewerLoader(req, getAuthorizationWithToken());
+    console.log(JSON.stringify(responseBody))
+    res.send(responseBody);
+  } catch (err) {
+    res.status(err.status).send(err.description);
+  }
+});
+
+/**
+ * Get renditions for CMS object.
+ */
+/**/
+app.get("/api/cms/instances/:category/:type/:objectId/contents", async (req, res) => {
+  console.log("SERVER: getting CMS contents");
+  try {
+    let responseBody = await cmsGetContents(req.params.category, req.params.type, req.params.objectId, getAuthorizationWithToken());
+    console.log(responseBody);
+    res.send(responseBody);
+  } catch (err) {
+    res.status(err.status).send(err.description);
+  }
+});
+
+/**
+ * Get rendition.
+ */
+/**/app.get("/api/css/v2/content/*", async (req, res) => {
+  try {
+    let responseBody = await getRendition(req, getAuthorizationWithToken());
+    res.send(responseBody);
+  } catch (err) {
+    res.status(err.status).send(err.description);
+  }
+});
 
 /**
  * Gets an authorization token from OT2.
@@ -309,7 +350,7 @@ const getToken = async (req) => {
     request(postRequest, (error, response) => {
       if (error) {
         console.log('Authentication with ot2 failed, error: ' + error);
-        return reject({status: response ? response.statusCode : error.code, description: error.message ? error.message : error});
+        return reject({ status: response ? response.statusCode : error.code, description: error.message ? error.message : error });
       }
       if (response.statusCode !== 200) {
         let responseBody = JSON.parse(response.body);

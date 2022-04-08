@@ -60,7 +60,35 @@ const cmsCreateInstance = async (req, category, type, authorization) => {
   });
 }
 
+const cmsGetContents = async (category, type, objectId, authorization) => {
+  console.log("getting cms contents from ot2");
+  let getRequest = {
+    method: "get",
+    url: process.env.BASE_URL + '/cms/instances/' + category + '/' + type + '/' + objectId + '/contents',
+    headers: {
+      'Authorization': authorization
+    }
+  };
+
+  return new Promise((resolve, reject) => {
+    request(getRequest, (error, response) => {
+      if (error) throw new Error("Error in receiving cms objects: " + error);
+      if (response.statusCode !== 200) {
+        let responseBody = JSON.parse(response.body);
+        console.log('Request failed: ', responseBody);
+        return reject({
+          status: response.statusCode,
+          description: responseBody != null && responseBody.fault != null ? responseBody.fault.faultstring : responseBody.details
+        });
+      }
+      resolve(response.body);
+    });
+  });
+
+}
+
 module.exports = {
   cmsGetObjects,
-  cmsCreateInstance
+  cmsCreateInstance,
+  cmsGetContents
 };
