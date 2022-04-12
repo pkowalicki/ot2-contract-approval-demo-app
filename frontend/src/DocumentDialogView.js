@@ -99,9 +99,17 @@ export default class DocumentDialogView extends React.Component {
 
 	renderDocument(rendition){
 		if (rendition.data && window['bravaapi']) {
+			axios({
+				method: 'get',
+				url: '/api/token'
+			})
+			.then(auth => {
+				console.log('auth header or brava viewer:',auth);
+				window['bravaapi'].setHttpHeaders({ Authorization: auth.data});
+			});
+
 			console.log('Rendering with viewer:');
 			console.log(JSON.stringify(rendition));
-			window['bravaapi'].setHttpHeaders({ Authorization: "Bearer token"});
 			window['bravaapi'].addPublication(rendition.data, true);
 			window['bravaapi'].render("bravaViewRoot");
 		} else {

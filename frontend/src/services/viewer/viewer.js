@@ -51,14 +51,19 @@ const loadViewerBootstrap = (viewer, callback) => {
     }).then(res => {
         console.log('Boot script body: ', res.data);
 
-        document.addEventListener('afterscriptexecute', (event) => {
-            if (event.target.id === 'viewer-' + viewer + '-boot-script') {
-                console.log('Boot script executed. Loading additional resources.');
-                callback();
-            }
+        const script = res.data + `
+                var evt = new Event('BootScriptExecuted', {detail: {}});
+                document.dispatchEvent(evt);
+            `;
+
+        console.log('Enriched script: ', script);
+
+        document.addEventListener('BootScriptExecuted', (event) => {
+            console.log('Boot script executed. Loading additional resources.');
+            callback();
         });
 
-        useScript('viewer-' + viewer + '-boot-script', res.data);
+        useScript('viewer-' + viewer + '-boot-script', script);
     }).catch(error => {
         let errorMessage = 'Could not get viewer: ';
         if (error.response != null && error.response.data != null) {

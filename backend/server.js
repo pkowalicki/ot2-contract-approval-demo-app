@@ -381,6 +381,10 @@ app.post("/api/token", async (req, res) => {
   }
 });
 
+app.get("/api/token", (req, res) => {
+  res.send(getAuthorizationWithToken());
+});
+
 app.listen(app.get("port"), () => {
   console.log(`Find the server at: http://localhost:${app.get("port")}/`); // eslint-disable-line no-console
 });
